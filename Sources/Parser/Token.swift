@@ -77,4 +77,19 @@ public enum TokenKind: UInt8 {
 
     // syntax tree nodes
     case sourceFile
+
+    public func isTrivia() -> Bool {
+        switch self {
+        case .lineComment, .multilineComment, .whitespace: return true
+        default: return false
+        }
+    }
+
+    public func isEof() -> Bool {
+        return self == .eof
+    }
 }
+
+public let LAST_TOKEN: TokenKind = .eof
+
+

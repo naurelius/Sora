@@ -1,7 +1,31 @@
 
 
+public struct TokenSet {
+    public let val: UInt64
 
-public struct TokenSet {}
+    public init(value: UInt64) {
+        self.val = value
+    }
+
+    public init(kinds: [TokenKind]) {
+        var value: UInt64 = 0
+        var i = 0
+
+        while i < kinds.count {
+            value |= 1 << (kinds[i].rawValue)
+            i += 1
+        }
+        self.val = value
+    }
+
+    public func union(other: TokenSet) -> TokenSet {
+        return TokenSet(value: self.val | other.val)
+    }
+
+    public func contains(kind: TokenKind) -> Bool {
+        return self.val & (1 << kind.rawValue) != 0
+    }
+}
 
 
 public enum TokenKind: UInt8 {
@@ -92,4 +116,34 @@ public enum TokenKind: UInt8 {
 
 public let LAST_TOKEN: TokenKind = .eof
 
+public let EXPRESSION_FIRST = TokenSet(kinds: [
+    .true,
+    .false,
+    .stringLiteral,
+    .templateLiteral,
+    .charLiteral,
+    .intLiteral,
+    .floatLiteral,
+    .identifier,
+    .if,
+    .match,
+    .lbrace,
+    .lparen,
+    .this,
+    .or,
+    .or_or,
+    .not,
+    .add,
+    .sub,
+    .for,
+    .while,
+    .break,
+    .continue,
+    .return
+])
 
+extension TokenKind: Equatable, Comparable {
+    public static func <(LHS: TokenKind, RHS: TokenKind) -> Bool {
+        return LHS.rawValue < RHS.rawValue
+    }
+}

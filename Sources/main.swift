@@ -6,11 +6,28 @@
 
 
 
-while !lex.isEof {
-    print(lex.offsetu32)
-    //lex.readDigits(base: 10)
-    print(lex.readNumber())
-    lex.eatChar()
-    //lex.eatChar()
-}
+
+
+let result = lex(content: """
+                 // a simple function
+                 @test
+                 fn do() -> void {
+                 +=-_|:[]{}
+                 123456
+                 && || == => << >>> >> <> 
+                 "Hello World"
+                 'h' / 'e'
+                 mod mut let Self self const class
+
+                 enum A {
+                 A, B, C
+                 }
+                 ~#?
+                 }
+                 /*
+                 * a multiline comment
+                 */
+                 let i: String = ""
+                 """)
+print(result.tokens, result.errors.map { return "\($0.span), \($0.error.message)"}.joined(separator: ", "))
 print("Hello, world!")

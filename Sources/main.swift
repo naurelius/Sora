@@ -22,7 +22,7 @@ let result = lex(content: """
                  enum A {
                  A, B, C
                  }
-                 ~#?
+                 "Hi ${name}"
                  }
                  /*
                  * a multiline comment

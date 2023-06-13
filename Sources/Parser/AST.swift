@@ -2,8 +2,13 @@
 
 
 
+// Super long and messy. Swift protocols works better
+// TODO: Switch to prptocols
+
+/// A full AST of Sora code 
+/// Contains a list of declarations
 public struct File {
-    public let elements: [Elememt]
+    public let elements: [Decl]
 }
 
 public struct NodeID {
@@ -18,27 +23,17 @@ public struct NodeID {
     }
 }
 
-public enum Elememt {
-    case function(Function)
-    case `class`(Class)
-    case `struct`(Struct)
-    case trait(Trait)
-    case impl(Impl)
-    case global(Global)
-    case `enum`(Enum)
-    case alias(Alias)
-    case module(Module)
-    case use(Use)
-    case extern(ExternPackage)
-    case error(id: NodeID, span: Span)
-}
+//. A top level declaration in Sora code
+public protocol Decl {}
 
+/// An identifier in Sora code
 public struct Ident {
     public let name: Name
     public let span: Span
 }
 
-public struct Global {
+/// A global variable
+public struct Global: Decl {
     public let id: NodeID
     public let span: Span
     public let name: Ident?
@@ -48,15 +43,17 @@ public struct Global {
     public let visibility: Visibility
 }
 
-public struct Module {
+/// A `module` declaration
+public struct Module: Decl {
     public let id: NodeID
     public let span: Span
     public let name: Ident?
-    public let elements: [Elememt]?
+    public let elements: [Decl]?
     public let visibility: Visibility
 }
 
-public struct Use {
+/// A `use` declaration
+public struct Use: Decl {
     public let id: NodeID
     public let span: Span
     public let commonPath: [UsePathComponent]
@@ -92,7 +89,8 @@ public enum UsePathComponentValue {
     case error
 }
 
-public struct Const {
+/// A `const` declaration
+public struct Const: Decl {
     public let id: NodeID
     public let span: Span
     public let name: Ident?
@@ -101,7 +99,8 @@ public struct Const {
     public let visibility: Visibility
 }
 
-public struct Enum {
+/// An `enum` declaration
+public struct Enum: Decl {
     public let id: NodeID
     public let span: Span
     public let name: Ident?
@@ -110,6 +109,7 @@ public struct Enum {
     public let visibility: Visibility
 }
 
+/// An enum variant
 public struct EnumVariant {
     public let id: NodeID
     public let span: Span
@@ -117,7 +117,8 @@ public struct EnumVariant {
     public let types: [Type]?
 }
 
-public struct Alias {
+/// A type alias
+public struct Alias: Decl {
     public let id: NodeID
     public let span: Span
     public let name: Ident?
@@ -125,7 +126,8 @@ public struct Alias {
     public let visibility: Visibility
 }
 
-public struct Struct {
+/// A `struct` declaration
+public struct Struct: Decl {
     public let id: NodeID
     public let span: Span
     public let name: Ident?
@@ -143,113 +145,48 @@ public struct StructField {
     public let visibility: Visibility
 }
 
-public indirect enum Type {
-    case this(TypeSelfType)
-    case basic(TypeBasicType)
-    case tuple(TypeTupleType)
-    case lambda(TypeLambdaType)
-    case error(id: NodeID, span: Span)
+/// Represents a type in Sora code
+public protocol Type {
+    var id: NodeID { get }
+    var span: Span { get }
 }
 
-public struct TypeSelfType {
+///The self Type
+public struct SelfType: Type {
     public let id: NodeID
     public let span: Span
 }
 
-public struct TypeTupleType {
+///A tuple type
+public struct TupleType: Type {
     public let id: NodeID
     public let span: Span
     public let subTypes: [Type]
 }
 
-public struct TypeLambdaType {
+/// A lambda or function type
+public struct LambdaType: Type {
     public let id: NodeID
     public let span: Span
     public let params: [Type]
     public let ret: Type?
 }
 
-public struct TypeBasicType {
+/// A basic type
+public struct BasicType: Type {
     public let id: NodeID
     public let span: Span
     public let path: Path
     public let params: [Type]
 }
 
-extension Type {
-    public static func createSelf(id: NodeID, span: Span) -> Type {
-        return .this(TypeSelfType(id: id, span: span))
-    }
-
-    public static func createBasic(id: NodeID, span: Span, path: Path, params: [Type]) -> Type {
-        return .basic(TypeBasicType(id: id, span: span, path: path, params: params))
-    }
-
-    public static func createFct(id: NodeID, span: Span, params: [Type], ret: Type?) -> Type {
-        return .lambda(TypeLambdaType(id: id, span: span, params: params, ret: ret))
-    }
-
-    public static func createTuple(id: NodeID, span: Span, subTypes: [Type]) -> Type {
-        return .tuple(TypeTupleType(id: id, span: span, subTypes: subTypes))
-    }
-
-    public func toBasic() -> TypeBasicType? {
-        switch self {
-        case .basic(let val): return val
-        default: return nil
-        }
-    }
-
-    public func toTuple() -> TypeTupleType? {
-        switch self {
-        case .tuple(let val): return val
-        default: return nil
-        }
-    }
-
-    public func toFct() -> TypeLambdaType? {
-        switch self {
-        case .lambda(let val): return val
-        default: return nil
-        }
-    }
-
-    public func isUnit() -> Bool {
-        switch self {
-        case .tuple(let val) where val.subTypes.count == 0: return true
-        default: return false
-        }
-    }
-
-/*    public func toString(interner: Interner) -> String {
-        switch self {
-        case .this(_): return "Self"
-        case .basic(let val): return "\(interner.str(name: val.n))"
-        }
-    }*/
-
-    public func span() -> Span {
-        switch self {
-        case .this(let val): return val.span
-        case .basic(let val): return val.span
-        case .tuple(let val): return val.span
-        case .lambda(let val): return val.span
-        case .error(_, let s): return s
-        }
-    }
-
-    public func id() -> NodeID {
-        switch self {
-        case .this(let val): return val.id
-        case .basic(let val): return val.id
-        case .tuple(let val): return val.id
-        case .lambda(let val): return val.id
-        case .error(let id, _): return id
-        }
-    }
+public struct ErrorType: Type {
+    public let id: NodeID
+    public let span: Span
 }
 
-public struct Impl {
+/// An `impl` declaration
+public struct Impl: Decl {
     public let id: NodeID
     public let span: Span
     public let typeParams: [TypeParam]?
@@ -258,7 +195,8 @@ public struct Impl {
     public let methods: [Function]
 }
 
-public struct Trait {
+/// A `trait` declaration
+public struct Trait: Decl {
     public let id: NodeID
     public let name: Ident?
     public let typeParams: [TypeParam]?
@@ -267,7 +205,8 @@ public struct Trait {
     public let visibility: Visibility
 }
 
-public struct Class {
+/// A `class` declaration
+public struct Class: Decl {
     public let id: NodeID
     public let span: Span
     public let name: Ident?
@@ -277,19 +216,28 @@ public struct Class {
     public let typeParams: [TypeParam]?
 }
 
-public struct ExternPackage {
+/// An `extern` declaration
+public struct ExternPackage: Decl {
     public let id: NodeID
     public let span: Span
     public let name: Ident?
     public let identifier: Ident?
 }
 
+/// An error declaration
+public struct ErrorDecl: Decl {
+    public let id: NodeID
+    public let span: Span
+}
+
+/// A type parameter in Sora
 public struct TypeParam {
     public let span: Span
     public let name: Ident?
     public let bounds: [Type]
 }
 
+/// A class field
 public struct Field {
     public let id: NodeID
     public let span: Span
@@ -301,6 +249,7 @@ public struct Field {
     public let visibility: Visibility
 }
 
+/// Is the function a declaration or closure?
 public enum FunctionKind {
     case function
     case lambda
@@ -313,7 +262,8 @@ public enum FunctionKind {
     }
 }
 
-public struct Function {
+/// A function declaration
+public struct Function: Decl {
     public let id: NodeID
     public let kind: FunctionKind
     public let span: Span
@@ -386,6 +336,7 @@ public struct AnnotationUsage {
     public let termArgs: [Expr]
 }
 
+/// An annotation
 public enum Annotation {
     case `internal`
     case pub
@@ -410,6 +361,7 @@ public enum Annotation {
     }
 }
 
+/// A function parameter
 public struct Param {
     public let id: NodeID
     public let span: Span
@@ -419,66 +371,11 @@ public struct Param {
     public let variadic: Bool
 }
 
-public enum Stmt {
-    case `let`(StmtLetType)
-    case expr(StmtExprType)
+/// Represents a Statement in Sora
+public protocol Stmt {}
 
-    public static func createLet(
-        id: NodeID, 
-        span: Span,
-        pattern: LetPattern,
-        dataType: Type?,
-        expr: Expr?
-    ) -> Stmt {
-    return .let(StmtLetType(id: id, span: span, pattern: pattern, dataType: dataType, expr: expr
-        ))
-    }
-
-    public static func createExpr(id: NodeID, span: Span, expr: Expr) -> Stmt {
-        return .expr(StmtExprType(id: id, span: span, expr: expr))
-    }
-
-    public var span: Span {
-        switch self {
-        case .let(let stmt): return stmt.span
-        case .expr(let stmt): return stmt.span
-        }
-    }
-
-    public var isLet: Bool {
-        if case .let(_) = self {
-            return true
-        } else {
-            return false
-        }
-    }
-
-    public var toLet: StmtLetType? {
-        if case .let(let val) = self {
-            return val
-        } else {
-            return nil
-        }
-    }
-
-    public var isExpr: Bool {
-        if case .expr(_) = self {
-            return true
-        } else {
-            return false
-        }
-    }
-   
-    public var toExpr: StmtExprType? {
-        if case .expr(let val) = self {
-            return val
-        } else {
-            return nil
-        }
-    }
-}
-
-public struct StmtLetType {
+/// A `let` statement
+public struct LetStmt: Stmt {
     public let id: NodeID
     public let span: Span
     public let pattern: LetPattern
@@ -486,75 +383,42 @@ public struct StmtLetType {
     public let expr: Expr?
 }
 
-public enum LetPattern {
-    case ident(LetIdentType)
-    case tuple(LetTupleType)
-    case underscore(LetUnderscoreType)
+/// Represents a let binding pattern
+public protocol LetPattern {}
 
-    public var isIdent: Bool {
-        switch self {
-        case .ident(_): return true
-        default: return false
-        }
-    }
-
-    public var isTuple: Bool {
-        switch self {
-        case .tuple(_): return true
-        default: return false
-        }
-    }
-
-    public var isUnderscore: Bool {
-        switch self {
-        case .underscore(_): return true
-        default: return false
-        }
-    }
-
-    public var toName: Name? {
-        switch self {
-        case .ident(let ident): return ident.name?.name
-        default: return nil
-        }
-    }
-
-    public var toIdent: LetIdentType? {
-        if case .ident(let ident) = self {
-            return ident
-        } else {
-            return nil
-        }
-    }
-
-    public var toTuple: LetTupleType? {
-        if case .tuple(let tuple) = self {
-            return tuple
+public extension LetPattern {
+    var name: Name? {
+        if let ident = self as? IdentPattern {
+            return ident.name
         } else {
             return nil
         }
     }
 }
 
-public struct LetUnderscoreType {
+/// An `_` binding pattern, the wildcard pattern
+public struct UnderscorePattern: LetPattern {
     public let id: NodeID
     public let span: Span
 }
 
-public struct LetIdentType {
+/// An identifier binding pattern
+public struct IdentPattern: LetPattern {
     public let id: NodeID
     public let span: Span
     public let mutable: Bool
     public let name: Ident?
 }
 
-public struct LetTupleType {
+/// A tuple binding pattern, a destructure
+public struct TuplePattern: LetPattern {
     public let id: NodeID
     public let span: Span
     public let parts: [LetPattern]
 }
 
-public struct ExprForType {
+/// A `for` loop
+public struct ForExpr: Expr {
     public let id: NodeID
     public let span: Span
 
@@ -563,7 +427,8 @@ public struct ExprForType {
     public let block: Expr
 }
 
-public struct ExprWhileType {
+/// A `while` loop
+public struct WhileExpr: Expr {
     public let id: NodeID
     public let span: Span
 
@@ -571,29 +436,34 @@ public struct ExprWhileType {
     public let block: Expr
 }
 
-public struct StmtExprType {
+/// An expression statement
+public struct ExprStmt: Stmt {
     public let id: NodeID
     public let span: Span
     public let expr: Expr
 }
 
-public struct ExprReturnType {
+/// A `return` expression
+public struct ReturnExpr: Expr {
     public let id: NodeID
     public let span: Span
 
     public let expr: Expr?
 }
 
-public struct ExprBreakType {
+/// A break expression
+public struct BreakExpr: Expr {
     public let id: NodeID
     public let span: Span
 }
 
-public struct ExprContinueType {
+/// A continue expression
+public struct ContinueExpr: Expr {
     public let id: NodeID
     public let span: Span
 }
 
+/// Unary operators
 public enum UnOp {
     case plus, neg, not
 
@@ -606,6 +476,7 @@ public enum UnOp {
     }
 }
 
+/// Comparison operators
 public enum CmpOp {
     case eq, ne
     case lt, le, gt, ge
@@ -625,6 +496,7 @@ public enum CmpOp {
     }
 }
 
+/// Binary operators
 public enum BinOp {
     case assign
     case add, sub, div, mul, mod
@@ -668,87 +540,44 @@ public enum BinOp {
     }
 }
 
-public indirect enum Expr {
-    case un(ExprUnType)
-    case bin(ExprBinType)
-    case litChar(ExprLitCharType)
-    case litInt(ExprLitIntType)
-    case litFloat(ExprLitFloatType)
-    case litStr(ExprLitStrType)
-    case template(ExprTemplateType)
-    case litBool(ExprLitBoolType)
-    case ident(ExprIdentType)
-    case call(ExprCallType)
-    case typeParam(ExprTypeParamType)
-    case path(ExprPathType)
-    case dot(ExprDotType)
-    case this(ExprSelfType)
-    case conv(ExprConvType)
-    case lambda(Function)
-    case block(ExprBlockType)
-    case `if`(ExprIfType)
-    case `for`(ExprForType)
-    case `while`(ExprWhileType)
-    case tuple(ExprTupleType)
-    case paren(ExprParenType)
-    case match(ExprMatchType)
-    case `break`(ExprBreakType)
-    case `continue`(ExprContinueType)
-    case `return`(ExprReturnType)
-    case error(id: NodeID, span: Span)
+/// Represents an expression in Sora code
+public protocol Expr {
+    var id: NodeID { get }
+    var span: Span { get }
 }
 
-extension Expr {
-    public static func createBlock(id: NodeID, span: Span, stmts: [Stmt], expr: Expr?) -> Expr {
-        return .block(ExprBlockType(id: id, span: span, stmts: stmts, expr: expr))
+public extension Expr {
+    var needsSemicolon: Bool {
+        switch self {
+            case is BlockExpr, is IfExpr, is MatchExpr, is ForExpr, is WhileExpr: return false
+        default: return true
+        }
     }
 
-    public static func createIf(id: NodeID, span: Span, cond: Expr, thenBlock: Expr, elseBlock: Expr?) -> Expr {
-        return .if(.init(id: id, span: span, cond: cond, thenBlock: thenBlock, elseBlock: elseBlock))
-    }
-
-    public static func createMatch(id: NodeID, span: Span, expr: Expr, cases: [MatchCaseType]) -> Expr {
-        return .match(.init(id: id, span: span, expr: expr, cases: cases))
-    }
-
-    public static func createFor(id: NodeID, span: Span, pattern: LetPattern, expr: Expr, block: Expr) -> Expr {
-        return .for(.init(id: id, span: span, pattern: pattern, expr: expr, block: expr))
-    }
-
-    public static func createWhile(id: NodeID, span: Span, cond: Expr, block: Expr) -> Expr {
-        return .while(.init(id: id, span: span, cond: cond, block: block))
-    }
-
-    public static func createReturn(id: NodeID, span: Span, expr: Expr?) -> Expr {
-        return .return(.init(id: id, span: span, expr: expr))
-    }
-
-    public static func createBreak(id: NodeID, span: Span) -> Expr {
-        return .break(.init(id: id, span: span))
-    }
-
-    public static func createContinue(id: NodeID, span: Span) -> Expr {
-        return .continue(.init(id: id, span: span))
-    }
-
-    public static func createUn(id: NodeID, span: Span, op: UnOp, opnd: Expr) -> Expr {
-        return .un(.init(id: id, span: span, op: op, opnd: opnd))
-    }
-
-    public static func createBin(id: NodeID, span: Span, op: BinOp, lhs: Expr, rhs: Expr) -> Expr {
-        return .bin(.init(id: id, span: span, op: op, initializer: false, lhs: lhs, rhs: rhs))
-    }
-
-    public static func createConv(id: NodeID, span: Span, object: Expr, dataType: Type) -> Expr {
-        return .conv(.init(id: id, span: span, object: object, dataType: dataType))
-    }
-
-    public static func createLitChar(id: NodeID, span: Span, fullValue: String) -> Expr {
-        return .litChar(.init(id: id, span: span, value: fullValue))
+    var isLitTrue: Bool {
+        if let litBool = self as? LitBoolExpr {
+            return litBool.value == true
+        } else {
+            return false
+        }
     }
 }
 
-public struct ExprIfType {
+/// A closure
+public struct LambdaExpr: Expr {
+    public let id: NodeID
+    public let span: Span
+    public let value: Function
+}
+
+/// An error expression
+public struct ErrorExpr: Expr {
+    public let id: NodeID
+    public let span: Span
+}
+
+/// An `if` expression
+public struct IfExpr: Expr {
     public let id: NodeID
     public let span: Span
 
@@ -757,14 +586,16 @@ public struct ExprIfType {
     public let elseBlock: Expr?
 }
 
-public struct ExprTupleType {
+/// A tuple
+public struct TupleExpr: Expr {
     public let id: NodeID
     public let span: Span
 
     public let values: [Expr]
 }
 
-public struct ExprConvType {
+/// A type cast
+public struct ConvExpr: Expr {
     public let id: NodeID
     public let span: Span
 
@@ -772,7 +603,8 @@ public struct ExprConvType {
     public let dataType: Type
 }
 
-public struct ExprUnType {
+/// A unary expression
+public struct UnExpr: Expr {
     public let id: NodeID
     public let span: Span
 
@@ -780,7 +612,8 @@ public struct ExprUnType {
     public let opnd: Expr
 }
 
-public struct ExprBinType {
+/// A binary expression
+public struct BinExpr: Expr {
     public let id: NodeID
     public let span: Span
 
@@ -788,76 +621,95 @@ public struct ExprBinType {
     public let initializer: Bool
     public let lhs: Expr
     public let rhs: Expr
+
+    public init(id: NodeID, span: Span, op: BinOp, initializer: Bool = false, lhs: Expr, rhs: Expr) {
+        self.id = id
+        self.span = span
+        self.op = op
+        self.initializer = initializer
+        self.lhs = lhs
+        self.rhs = rhs
+    }
 }
 
-public struct ExprLitCharType {
+/// A character literal
+public struct LitCharExpr: Expr {
     public let id: NodeID
     public let span: Span
     public let value: String
 }
 
-public struct ExprLitIntType {
+/// An integer literal
+public struct LitIntExpr: Expr{
     public let id: NodeID
     public let span: Span
     public let value: String
 }
 
-public struct ExprLitFloatType {
+/// A float literal
+public struct LitFloatExpr: Expr {
     public let id: NodeID
     public let span: Span
     public let value: String
 }
 
-public struct ExprLitStrType {
+/// A string literal
+public struct LitStrExpr: Expr {
     public let id: NodeID
     public let span: Span
     public let value: String
 }
 
-public struct ExprTemplateType {
+/// A string interpolation
+public struct TemplateExpr: Expr {
     public let id: NodeID
     public let span: Span
     public let parts: [Expr]
 }
 
-public struct ExprLitBoolType {
+/// A boolean literal
+public struct LitBoolExpr: Expr {
     public let id: NodeID
     public let span: Span
     public let value: Bool
 }
 
-public struct ExprBlockType {
+/// A block of code
+public struct BlockExpr: Expr {
     public let id: NodeID
     public let span: Span
     public let stmts: [Stmt]
     public let expr: Expr?
 }
 
-public struct ExprSelfType {
+/// The self expression
+public struct SelfExpr: Expr {
     public let id: NodeID
     public let span: Span
 }
 
-public struct ExprIdentType {
+/// An identifier expression
+public struct IdentExpr: Expr {
     public let id: NodeID
     public let span: Span
     public let name: Name
 }
 
-public struct ExprCallType {
+/// A function call
+public struct CallExpr: Expr {
     public let id: NodeID
     public let span: Span
     public let callee: Expr
     public let args: [Expr]
 
     public var object: Expr? {
-        if let typeParam = self.callee.toTypeParam {
-            if let dot = typeParam.callee.toDot {
+        if let typeParam = self.callee as? TypeParamExpr {
+            if let dot = typeParam.callee as? DotExpr {
                 return dot.lhs
             } else {
                 return nil
             }
-        } else if let dot = self.callee.toDot {
+        } else if let dot = self.callee as? DotExpr {
             return dot.lhs
         } else {
             return nil
@@ -869,13 +721,15 @@ public struct ExprCallType {
     }
 }
 
-public struct ExprParenType {
+/// An expression in parenthesis
+public struct ParenExpr: Expr {
     public let id: NodeID
     public let span: Span
     public let expr: Expr
 }
 
-public struct ExprMatchType {
+/// A `match` expression
+public struct MatchExpr: Expr {
     public let id: NodeID
     public let span: Span
     public let expr: Expr
@@ -889,6 +743,7 @@ public struct MatchCaseType {
     public let value: Expr
 }
 
+/// A match pattern
 public struct MatchPattern {
     public let id: NodeID
     public let span: Span
@@ -912,13 +767,15 @@ public struct MatchPatternParam {
     public let mutable: Bool
 }
 
+/// A path represents a fully qualified name
 public struct Path {
     public let id: NodeID
     public let span: Span
     public let names: [Ident]
 }
 
-public struct ExprTypeParamType {
+/// A type parameter expression
+public struct TypeParamExpr: Expr {
     public let id: NodeID
     public let span: Span
     public let opSpan: Span
@@ -926,7 +783,8 @@ public struct ExprTypeParamType {
     public let args: [Type]
 }
 
-public struct ExprPathType {
+/// A fully qualified name as an expression
+public struct PathExpr: Expr {
     public let id: NodeID
     public let span: Span
     public let opSpan: Span
@@ -934,7 +792,8 @@ public struct ExprPathType {
     public let rhs: Expr
 }
 
-public struct ExprDotType {
+/// A dot access expression
+public struct DotExpr: Expr {
     public let id: NodeID
     public let span: Span
     public let opSpan: Span
@@ -942,6 +801,7 @@ public struct ExprDotType {
     public let rhs: Expr
 }
 
+/// Represents declaration visibility in Sora code
 public enum Visibility {
     case `public`
     case `default`

@@ -1,14 +1,28 @@
+import BigInt
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 public struct TokenSet {
-    public let val: UInt64
+    public let val: BigUInt
 
-    public init(value: UInt64) {
+    public init(value: BigUInt) {
         self.val = value
     }
 
     public init(kinds: [TokenKind]) {
-        var value: UInt64 = 0
+        var value: BigUInt = 0
         var i = 0
 
         while i < kinds.count {

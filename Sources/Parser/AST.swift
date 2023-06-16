@@ -806,7 +806,7 @@ public enum Visibility {
     case `public`
     case `default`
 
-    public func fromModifiers(modifiers: Modifiers) -> Visibility {
+    public static func fromModifiers(modifiers: Modifiers) -> Visibility {
         if modifiers.contains(modifier: .pub) {
             return .public
         } else {

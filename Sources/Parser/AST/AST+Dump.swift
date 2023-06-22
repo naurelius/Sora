@@ -1,16 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
 func dump(_ dumper: AstDumper, _ msg: String) {
     for _ in 0..<dumper.indent*2 {
         print(" ", terminator: "")
@@ -75,10 +63,9 @@ final class AstDumper {
         case is Module: dumpModule(mod: el as! Module)
         case is Use: dumpUse(use: el as! Use)
         case is ExternPackage: dumpExtern(stmt: el as! ExternPackage)
-        case is ErrorDecl: do {
+        case is ErrorDecl:
             let decl = el as! ErrorDecl
             dump(self, "error @ \(decl.span) \(decl.id)")
-        }
         default: fatalError("unreachable!")
         }
     }
@@ -290,18 +277,16 @@ final class AstDumper {
 
     func dumpLetPattern(pat: LetPattern) {
         switch pat {
-        case is IdentPattern: do {
+        case is IdentPattern:
             let ident = pat as! IdentPattern
-            dump(self, "ident \(ident.name)")
-        }
+            dump(self, "ident \(String(describing:ident.name))")
         case is UnderscorePattern: dump(self, "_")
-        case is TuplePattern: do {
+        case is TuplePattern:
             let tuple = pat as! TuplePattern
             dump(self, "tuple")
             self.withIndent {d in 
                 tuple.parts.forEach { d.dumpLetPattern(pat: $0) }
             }
-        }
         default: fatalError("unreachable!")
         }
     }

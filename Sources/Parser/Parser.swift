@@ -31,13 +31,13 @@ public final class Parser {
     var tokenWidths: [UInt32]
     var tokenIdx: Int
     var idGen: NodeIdGenerator
-    var interner: Interner
+    public private(set) var interner: Interner
     let content: String
     var errors: [ParseErrorWithLocation]
     var nodes: [(UInt, UInt32)]
     var offset: UInt32
     
-    init(with content: String, interner: inout Interner) {
+    public init(with content: String, interner: inout Interner) {
         let result = lex(content: content)
         self.tokens = result.tokens
         self.tokenWidths = result.widths
@@ -54,7 +54,7 @@ public final class Parser {
         return idGen.next()
     }
 
-    func parse() -> (ast: File, gen: NodeIdGenerator, errors: [ParseErrorWithLocation]) {
+    public func parse() -> (ast: File, gen: NodeIdGenerator, errors: [ParseErrorWithLocation]) {
         let file = parseFile()
         assert(nodes.isEmpty)
         return (ast: file, gen: idGen, errors: errors)
@@ -755,14 +755,12 @@ public final class Parser {
     }
 
     func parseBlock() -> Expr {
-        print(current)
         startNode()
         var stmts = [Stmt]()
         var expr: Expr? = nil
 
         if expect(kind: .lbrace) {
             while !`is`(kind: .rbrace) && !isEof() {
-                print(current)
                 let stmtOrExpr = parseStmtOrExpr()
                 switch stmtOrExpr {
                 case .stmt(let stmt): stmts.append(stmt)
@@ -986,7 +984,6 @@ public final class Parser {
     }
 
     func parsePrimary() -> Expr {
-        print(current)
         let start = currentSpan.start
         var left = parseFactor()
 
@@ -1029,7 +1026,7 @@ public final class Parser {
     }
     
     func createBinary(kind: TokenKind, start: UInt32, left: Expr, right: Expr) -> Expr {
-        print("entered func createBinary, kind: \(kind), left: \(left),  right: \(right)")
+        //print("entered func createBinary, kind: \(kind), left: \(left),  right: \(right)")
         let op: BinOp
         switch kind {
         case .eq: op = .assign
@@ -1090,7 +1087,6 @@ public final class Parser {
     }
     
     func parseIdentifier() -> Expr {
-        print("entered func parseIdentifier")
         guard let ident = expectIdentifier() else {
             fatalError("identifier expected")
         }
@@ -1099,7 +1095,6 @@ public final class Parser {
     }
 
     func parseParentheses() -> Expr {
-        print("entered func parseParentheses")
         startNode()
         assertToken(kind: .lparen)
 
@@ -1135,7 +1130,6 @@ public final class Parser {
     }
 
     func parseLitChar() -> Expr {
-        print("entered func parseLitChar")
         let span = currentSpan
         assertToken(kind: .charLiteral)
         let value = sourceSpan(span: span)
@@ -1143,7 +1137,6 @@ public final class Parser {
     }
 
     func parseLitInt() -> Expr {
-        print("entered func parseLitInt")
         let span = currentSpan
         assertToken(kind: .intLiteral)
         let value = sourceSpan(span: span)
@@ -1151,7 +1144,6 @@ public final class Parser {
     }
 
     func parseLitFloat() -> Expr {
-        print("entered func parseLitFloat")
         let span = currentSpan
         assertToken(kind: .floatLiteral)
         let value = sourceSpan(span: span)
@@ -1159,7 +1151,6 @@ public final class Parser {
     }
 
     func parseTemplate() -> Expr {
-        print("entered func parseTemplate")
         let span = currentSpan
         let start = span.start
         assertToken(kind: .templateLiteral)
@@ -1190,7 +1181,6 @@ public final class Parser {
     }
 
     func parseString() -> Expr {
-        print("entered func parseString")
         let span = currentSpan
         assertToken(kind: .stringLiteral)
         let value = sourceSpan(span: span)
@@ -1198,7 +1188,6 @@ public final class Parser {
     }
 
     func parseBoolLiteral() -> Expr {
-        print("entered func parseBoolLiteral")
         let span = currentSpan
         let kind = current
         assertToken(kind: kind)
@@ -1207,14 +1196,12 @@ public final class Parser {
     }
 
     func parseThis() -> Expr {
-        print("entered func parseThis")
         let span = currentSpan
         assertToken(kind: .this)
         return SelfExpr(id: generateId(), span: span)
     }
 
     func parseLambda() -> Expr {
-        print("entered func parseLambda")
         startNode()
         let params: [Param]
         if eat(kind: .or_or) {

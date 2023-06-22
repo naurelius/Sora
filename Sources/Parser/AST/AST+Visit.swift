@@ -2,19 +2,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 public protocol Visitor { 
     mutating func visit(ast: File)
     mutating func visit(extern: ExternPackage)
@@ -127,7 +114,7 @@ public func walk<V: Visitor>(v: inout V, decl: Decl) {
     case is Module: v.visit(mod: decl as! Module)
     case is Use: v.visit(use: decl as! Use)
     case is ExternPackage: v.visit(extern: decl as! ExternPackage)
-    case is ErrorDecl: do {}
+    case is ErrorDecl: break
     default: fatalError("unreachable!")
     }
 }
@@ -220,17 +207,15 @@ public func walk<V: Visitor>(v: inout V, param: Param) {
 
 public func walk<V: Visitor>(v: inout V, type: Type) {
     switch type {
-    case is BasicType, is SelfType: do {}
-    case is TupleType: do {
+    case is BasicType, is SelfType: break
+    case is TupleType:
         let tuple = type as! TupleType
         for ty in tuple.subTypes {
             v.visit(type: ty)
         }
-    }
-    case is LambdaType: do {
+    case is LambdaType: 
         let fct = type as! LambdaType
         fct.params.forEach { v.visit(type: $0) }
-    }
     case is ErrorType: do {}
     default: fatalError("unreachable!")
     }
@@ -238,7 +223,7 @@ public func walk<V: Visitor>(v: inout V, type: Type) {
 
 public func walk<V: Visitor>(v: inout V, stmt: Stmt) {
     switch stmt {
-    case is LetStmt: do {
+    case is LetStmt:
         let letStmt = stmt as! LetStmt
         if let ty = letStmt.dataType {
             v.visit(type: ty)
@@ -246,24 +231,20 @@ public func walk<V: Visitor>(v: inout V, stmt: Stmt) {
         if let e = letStmt.expr {
             v.visit(expr: e)
         }
-    }
-    case is ExprStmt: do {
+    case is ExprStmt:
         let expr = stmt as! ExprStmt
         v.visit(expr: expr.expr)
-    }
     default: fatalError("unreachable!")
     }
 }
 public func walk<V: Visitor>(v: inout V, expr: Expr) {
     switch expr {
-    case is UnExpr: do {
+    case is UnExpr:
         v.visit(expr: (expr as! UnExpr).opnd)
-    }
-    case is BinExpr: do {
+    case is BinExpr:
         let bexpr = expr as! BinExpr
         v.visit(expr: bexpr.lhs)
         v.visit(expr: bexpr.rhs)
-    }
     case is CallExpr: do {
         let call = expr as! CallExpr
         v.visit(expr: call.callee)
@@ -279,63 +260,55 @@ public func walk<V: Visitor>(v: inout V, expr: Expr) {
         v.visit(expr: path.lhs)
         v.visit(expr: path.rhs)
     }
-    case is DotExpr: do {
+    case is DotExpr:
         let dot = expr as! DotExpr
         v.visit(expr: dot.lhs)
         v.visit(expr: dot.rhs)
-    }
-    case is ConvExpr: do {
+    case is ConvExpr:
         let conv = expr as! ConvExpr
         v.visit(expr: conv.object)
         v.visit(type: conv.dataType)
-    }
     case is LambdaExpr: v.visit(fct: (expr as! LambdaExpr).value)
-    case is BlockExpr: do {
+    case is BlockExpr:
         let block = expr as! BlockExpr
         block.stmts.forEach { v.visit(stmt: $0) }
         
         if let expr = block.expr {
             v.visit(expr: expr)
         }
-    }
-    case is TemplateExpr: do {
+    case is TemplateExpr:
         let template = expr as! TemplateExpr
         template.parts.forEach { v.visit(expr: $0) }
-    }
-    case is IfExpr: do {
+    case is IfExpr:
         let ifexpr = expr as! IfExpr
         v.visit(expr: ifexpr.cond)
         v.visit(expr: ifexpr.thenBlock)
         if let b = ifexpr.elseBlock {
             v.visit(expr: b)
         }
-    }
-    case is ForExpr: do {
+    case is ForExpr:
         let forExpr = expr as! ForExpr
         v.visit(expr: forExpr.expr)
         v.visit(expr: forExpr.block)
-    }
-    case is WhileExpr: do {
+    case is WhileExpr:
         let whileExpr = expr as! WhileExpr
         v.visit(expr: whileExpr.cond)
         v.visit(expr: whileExpr.block)
-    }
-    case is TupleExpr: do {
+    case is TupleExpr:
         let tuple = expr as! TupleExpr
         tuple.values.forEach { v.visit(expr: $0) }
-    }
     case is ParenExpr: v.visit(expr: (expr as! ParenExpr).expr)
     case is MatchExpr: v.visit(expr: (expr as! MatchExpr).expr)
-    case is ReturnExpr: do {
+    case is ReturnExpr:
         let ret = expr as! ReturnExpr
         if let e = ret.expr {
             v.visit(expr: e)
         }
-    }
-    case is BreakExpr, is ContinueExpr: do {}
-    case is SelfExpr, is LitCharExpr, is LitIntExpr: do {}
-    case is LitStrExpr, is LitBoolExpr, is LitFloatExpr, is IdentExpr: do {}
-    case is ErrorExpr: do {}
+    
+    case is BreakExpr, is ContinueExpr: break
+    case is SelfExpr, is LitCharExpr, is LitIntExpr: break
+    case is LitStrExpr, is LitBoolExpr, is LitFloatExpr, is IdentExpr: break
+    case is ErrorExpr: break
     default: fatalError("unreachable!")
     }
 }

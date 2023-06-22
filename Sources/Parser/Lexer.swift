@@ -1,9 +1,4 @@
 
-
-
-
-
-
 let keywords: [String: TokenKind] = [
     "true": .true,
     "false": .false,
@@ -229,14 +224,13 @@ public final class Lexer {
 
         switch ch {
         case "+": return .add
-        case "-": do {
+        case "-":
             if nch == ">" {
                 self.eatChar()
                 return .arrow
             } else {
                 return .sub
             }
-        }
         case "*": return .mul
         case "/": return .div
         case "%": return .modulo
@@ -245,13 +239,12 @@ public final class Lexer {
         case ")": return .rparen
         case "[": return .lbracket
         case "]": return .rbracket
-        case "{": do {
+        case "{":
             if var openBracesTop = self.openBraces.last {
                 openBracesTop += 1
             }
             return .lbrace
-        }
-        case "}": do {
+        case "}":
             if var openBracesTop = self.openBraces.last {
                 openBracesTop -= 1
                 if openBracesTop == 0 {
@@ -260,35 +253,31 @@ public final class Lexer {
                 }
             }
             return .rbrace
-        }
-        case "|": do {
+        case "|":
             if nch == "|" {
                 self.eatChar()
                 return .or_or
             } else {
                 return .or
             }
-        }
-        case "&": do {
+        case "&":
             if nch == "&" {
                 self.eatChar()
                 return .and_and
             } else {
                 return .and
             }
-        }
         case "^": return .caret
         case ",": return .comma
         case ";": return .semicolon
-        case ":": do {
+        case ":":
             if nch == ":" {
                 self.eatChar()
                 return .colon_colon
             } else {
                 return .colon
             }
-        }
-        case ".": do {
+        case ".":
             if nch == "." && nnch == "." {
                 self.eatChar()
                 self.eatChar()
@@ -296,8 +285,7 @@ public final class Lexer {
             } else {
                 return .dot
             }
-        }
-        case "=": do {
+        case "=":
             if nch == "=" {
                 self.eatChar()
                 if nnch == "=" {
@@ -312,8 +300,7 @@ public final class Lexer {
             } else {
                 return .eq
             }
-        }
-        case "<": do {
+        case "<":
             switch nch {
             case "=": do {
                 self.eatChar()
@@ -322,10 +309,10 @@ public final class Lexer {
             case "<": self.eatChar(); return .lt_lt
             default: return .lt
             }
-        }
+        
         case ">": switch nch {
         case "=": self.eatChar(); return .ge
-        case ">": do {
+        case ">":
             self.eatChar()
             if nnch == ">" {
                 self.eatChar()
@@ -333,7 +320,6 @@ public final class Lexer {
             } else {
                 return .gt_gt
             }
-        }
         default: return .gt
         }
         case "!": if nch == "=" {
@@ -357,16 +343,14 @@ public final class Lexer {
         if self.curr == "0" {
             let next = self.lookahead
             switch next {
-            case "x": do {
+            case "x":
                 self.eatChar()
                 self.eatChar()
                 base = 16
-            }
-            case "b": do {
+            case "b":
                 self.eatChar()
                 self.eatChar()
                 base = 2
-            }
             default: base = 10
             }
         } else {
@@ -379,7 +363,7 @@ public final class Lexer {
         }
 
         if let ch = self.curr, ch.isIdentifierStart {
-            self.readIdentifierAsString()
+            _ = self.readIdentifierAsString()
         }
 
         return .intLiteral
